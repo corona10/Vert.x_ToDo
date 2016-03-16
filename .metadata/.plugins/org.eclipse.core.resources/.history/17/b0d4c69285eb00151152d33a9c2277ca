@@ -1,0 +1,36 @@
+package todo;
+
+import com.google.gson.annotations.SerializedName;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+@DatabaseTable(tableName = "todo")
+public class ToDoModel {
+	@DatabaseField(id = true)
+	private  transient int id;
+	@DatabaseField
+	private String title;
+	@DatabaseField
+	private int order;
+	@DatabaseField
+	private boolean completed;
+	public String url;
+	
+	public ToDoModel() {
+		super();
+	}
+
+	public ToDoModel(int id, String title, int order, boolean completed) {
+		super();
+		this.id = id;
+		this.title = title;
+		this.order = order;
+		this.completed = completed;
+		this.url = "test";
+	}
+
+	public int getId() {
+		return id;
+	}
+	
+}

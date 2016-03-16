@@ -13,20 +13,18 @@ import todo.ToDoModel;
 public class ToDoDatabase {
 
 	public static ConnectionSource connectionSource;
-	static void init_db(String db_url)
-	{
+
+	static void init_db(String db_url) {
 		connectionSource = null;
 		try {
 			connectionSource = new JdbcConnectionSource(db_url);
 			TableUtils.createTableIfNotExists(connectionSource, ToDoModel.class);
-			
+
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}finally
-		{
-			if(connectionSource != null)
-			{
+		} finally {
+			if (connectionSource != null) {
 				try {
 					connectionSource.close();
 				} catch (SQLException e) {

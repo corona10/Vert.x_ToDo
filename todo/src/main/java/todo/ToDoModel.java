@@ -14,7 +14,7 @@ public class ToDoModel {
 	private int order;
 	@DatabaseField
 	private boolean completed;
-	
+
 	public ToDoModel() {
 		super();
 	}
@@ -41,6 +41,5 @@ public class ToDoModel {
 	public Boolean isCompleted() {
 		return completed;
 	}
-	
-	
+
 }

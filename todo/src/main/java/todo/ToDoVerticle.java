@@ -15,6 +15,7 @@ import com.j256.ormlite.support.ConnectionSource;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -25,13 +26,14 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 public class ToDoVerticle extends AbstractVerticle {
 
-	private Map<String, JsonObject> products = new HashMap<>();
 	final static String H2_URL = "jdbc:h2:mem:todo;DB_CLOSE_DELAY=-1";
 
 	@Override
 	public void start(Future<Void> startFuture) throws Exception {
 		// TODO Auto-generated method stub
+
 		ToDoDatabase.init_db(H2_URL);
+
 		Router router = Router.router(vertx);
 		router.route().handler(BodyHandler.create());
 
@@ -47,48 +49,72 @@ public class ToDoVerticle extends AbstractVerticle {
 	}
 
 	private void handleGetAllToDo(RoutingContext routingContext) {
+		Vertx vertx = Vertx.vertx();
 		HttpServerResponse response = routingContext.response();
-		Dao<ToDoModel, Integer> todo_dao;
-		List<ToDoModel> todo_list;
 		JsonArray jsonArray = new JsonArray();
-		try {
-			todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-			todo_list = todo_dao.queryForAll();
 
-			for (int i = 0; i < todo_list.size(); i++) {
-				ToDoModel todo = todo_list.get(i);
-				JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
-				jsonArray.add(json);
+		vertx.<String> executeBlocking(future -> {
+			String result = null;
+			try {
+				Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
+				List<ToDoModel> todo_list = todo_dao.queryForAll();
+				for (int i = 0; i < todo_list.size(); i++) {
+					ToDoModel todo = todo_list.get(i);
+					JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
+					jsonArray.add(json);
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			sendError(400, response);
-		}
-		response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+			result = jsonArray.encodePrettily();
+			future.complete(result);
+		} , res -> {
+			if (res.succeeded()) {
+				if (res.result() != null) {
+					response.putHeader("content-type", "application/json").end(res.result());
+				} else {
+					sendError(400, response);
+				}
+			} else {
+				sendError(400, response);
+			}
+		});
 	}
 
 	private void handleGetToDo(RoutingContext routingContext) {
+		Vertx vertx = Vertx.vertx();
 		int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
 		HttpServerResponse response = routingContext.response();
-		Dao<ToDoModel, Integer> todo_dao;
-		ToDoModel todo;
-		try {
-			todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-			todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
-			if (todo != null) {
-				JsonObject json = buidJson(todo, routingContext.request().absoluteURI());
-				response.putHeader("content-type", "application/json").end(json.encodePrettily());
-			} else {
-				JsonObject json = new JsonObject();
-				response.putHeader("content-type", "application/json").end(json.encodePrettily());
-			}
 
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			sendError(400, response);
-		}
+		vertx.<String> executeBlocking(future -> {
+			String result = null;
+			try {
+				Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
+				ToDoModel todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
+				if (todo != null) {
+					JsonObject json = buidJson(todo, routingContext.request().absoluteURI());
+					result = json.encodePrettily();
+				} else {
+					JsonObject json = new JsonObject();
+					result = json.encodePrettily();
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			future.complete(result);
+		} , res -> {
+			if (res.succeeded()) {
+				if (res.result() != null) {
+					response.putHeader("content-type", "application/json").end(res.result());
+				} else {
+					sendError(400, response);
+				}
+			} else {
+				sendError(400, response);
+			}
+		});
 	}
 
 	private void handleAddToDo(RoutingContext routingContext) {

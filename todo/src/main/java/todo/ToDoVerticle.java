@@ -60,7 +60,6 @@ public class ToDoVerticle extends AbstractVerticle {
 	}
 
 	private void handleGetAllToDo(RoutingContext routingContext) {
-		Vertx vertx = Vertx.vertx();
 		HttpServerResponse response = routingContext.response();
 		JsonArray jsonArray = new JsonArray();
 
@@ -96,7 +95,6 @@ public class ToDoVerticle extends AbstractVerticle {
 	}
 
 	private void handleGetToDo(RoutingContext routingContext) {
-		Vertx vertx = Vertx.vertx();
 		int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
 		HttpServerResponse response = routingContext.response();
 
@@ -134,73 +132,116 @@ public class ToDoVerticle extends AbstractVerticle {
 	private void handleAddToDo(RoutingContext routingContext) {
 		Gson gson = new Gson();
 		HttpServerResponse response = routingContext.response();
-		Dao<ToDoModel, Integer> todo_dao;
-		try {
-			JsonObject json = new JsonObject(routingContext.getBodyAsString());
-			json.remove("id");
-			ToDoModel todo = gson.fromJson(json.encodePrettily(), ToDoModel.class);
-			todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-			todo_dao.create(todo);
-			json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
-			response.putHeader("content-type", "application/json").end(json.encodePrettily());
-			ToDoDatabase.connectionSource.close();
-		} catch (Exception e) {
-			sendError(400, response);
-		}
+		vertx.<String> executeBlocking(future -> {
+			String result = null;
+			try {
+				JsonObject json = new JsonObject(routingContext.getBodyAsString());
+				json.remove("id");
+				ToDoModel todo = gson.fromJson(json.encodePrettily(), ToDoModel.class);
+				Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
+				todo_dao.create(todo);
+				json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
+				result = json.encodePrettily();
+				ToDoDatabase.connectionSource.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			future.complete(result);
+		} , res -> {
+			if (res.succeeded()) {
+				if (res.result() != null) {
+					response.putHeader("content-type", "application/json").end(res.result());
+				} else {
+					sendError(400, response);
+				}
+			} else {
+				sendError(400, response);
+			}
+		});
 	}
 
 	private void handleModifyToDo(RoutingContext routingContext) {
 		int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
 		HttpServerResponse response = routingContext.response();
-		Dao<ToDoModel, Integer> todo_dao;
-		ToDoModel todo;
-		try {
-			todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-			UpdateBuilder<ToDoModel, Integer> updb = todo_dao.updateBuilder();
-			JsonObject json = new JsonObject(routingContext.getBodyAsString());
-			updb.where().eq("id", entryId);
-			updb.updateColumnValue("completed", json.getValue("completed"));
-			updb.update();
-			todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
-			ToDoDatabase.connectionSource.close();
-			if (todo != null) {
-				json = buidJson(todo, routingContext.request().absoluteURI());
-				response.putHeader("content-type", "application/json").end(json.encodePrettily());
-			} else {
-				json = new JsonObject();
-				response.putHeader("content-type", "application/json").end(json.encodePrettily());
+		vertx.<String> executeBlocking(future -> {
+			String result = null;
+			try {
+				Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
+				UpdateBuilder<ToDoModel, Integer> updb = todo_dao.updateBuilder();
+				JsonObject json = new JsonObject(routingContext.getBodyAsString());
+				updb.where().eq("id", entryId);
+				if (json.getValue("title") != null) {
+					updb.updateColumnValue("title", json.getValue("title"));
+				}
+
+				if (json.getValue("order") != null) {
+					updb.updateColumnValue("order", json.getValue("order"));
+				}
+
+				if (json.getValue("completed") != null) {
+					updb.updateColumnValue("completed", json.getValue("completed"));
+				}
+				updb.update();
+				ToDoModel todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
+				ToDoDatabase.connectionSource.close();
+				JsonObject result_json = null;
+				if (todo != null) {
+					result_json = buidJson(todo, routingContext.request().absoluteURI());
+					result = result_json.encodePrettily();
+				} else {
+					result_json = new JsonObject();
+					result = result_json.encodePrettily();
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			sendError(400, response);
-		}
+			future.complete(result);
+		} , res -> {
+			if (res.succeeded()) {
+				response.putHeader("content-type", "application/json").end(res.result());
+			} else {
+				sendError(400, response);
+			}
+		});
 	}
 
-	private void handleDeleteToDo(RoutingContext routingContext) {
-		int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
+	private void handleDeleteToDo(RoutingContext routingContext) 
+	{
 		HttpServerResponse response = routingContext.response();
-		Dao<ToDoModel, Integer> todo_dao;
-		ToDoModel todo;
-		try {
-			todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-			DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
-			delb.where().eq("id", entryId);
-			todo_dao.delete(delb.prepare());
-			todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
-			ToDoDatabase.connectionSource.close();
-			if (todo != null) {
-				JsonObject json = buidJson(todo, routingContext.request().absoluteURI());
-				response.putHeader("content-type", "application/json").end(json.encodePrettily());
-			} else {
-				JsonObject json = new JsonObject();
-				response.putHeader("content-type", "application/json").end(json.encodePrettily());
+		vertx.<String> executeBlocking(future -> {
+			int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
+
+			String result = null;
+			try {
+				Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
+				DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
+				delb.where().eq("id", entryId);
+				todo_dao.delete(delb.prepare());
+				ToDoModel todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
+				ToDoDatabase.connectionSource.close();
+				if (todo != null) {
+					JsonObject json = buidJson(todo, routingContext.request().absoluteURI());
+					result = json.encodePrettily();
+				} else {
+					JsonObject json = new JsonObject();
+					result = json.encodePrettily();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			sendError(400, response);
-		}
+			future.complete(result);
+		} , res -> {
+			if (res.succeeded()) {
+				response.putHeader("content-type", "application/json").end(res.result());
+			} else {
+				sendError(400, response);
+			}
+		});
 	}
 
 	private void handleDeleteAllToDo(RoutingContext routingContext) {
-		Vertx vertx = Vertx.vertx();
 		HttpServerResponse response = routingContext.response();
 		JsonArray jsonArray = new JsonArray();
 

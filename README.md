@@ -11,3 +11,6 @@
 * DELETE / -> delete all to-do list
 * DELETE /:entryId -> delete entryId's to-do
 * PATCH /:entryId -> update entryId's to-do
+
+## API test result
+![Alt text](/docs/img/api-test.png "api-test")

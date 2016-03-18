@@ -159,8 +159,6 @@ public class ToDoVerticle extends AbstractVerticle {
 			UpdateBuilder<ToDoModel, Integer> updb = todo_dao.updateBuilder();
 			JsonObject json = new JsonObject(routingContext.getBodyAsString());
 			updb.where().eq("id", entryId);
-			updb.updateColumnValue("title", json.getValue("title"));
-			updb.updateColumnValue("order", json.getValue("order"));
 			updb.updateColumnValue("completed", json.getValue("completed"));
 			updb.update();
 			todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
@@ -247,11 +245,5 @@ public class ToDoVerticle extends AbstractVerticle {
 		json.put("title", model.getTitle());
 		json.put("url", url);
 		return json;
-	}
-	
-	private void enableCors(HttpServerRequest req) {
-		req.response().headers().add("Access-Control-Allow-Origin", "*");
-		req.response().headers().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
-		req.response().headers().add("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
 	}
 }

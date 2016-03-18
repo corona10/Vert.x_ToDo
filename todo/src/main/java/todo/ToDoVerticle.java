@@ -185,25 +185,35 @@ public class ToDoVerticle extends AbstractVerticle {
 	}
 
 	private void handleDeleteAllToDo(RoutingContext routingContext) {
+		Vertx vertx = Vertx.vertx();
 		HttpServerResponse response = routingContext.response();
-		Dao<ToDoModel, Integer> todo_dao;
-		List<ToDoModel> todo_list;
 		JsonArray jsonArray = new JsonArray();
-		try {
-			todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-			DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
-			todo_dao.delete(delb.prepare());
-			todo_list = todo_dao.queryForAll();
 
-			for (int i = 0; i < todo_list.size(); i++) {
-				ToDoModel todo = todo_list.get(i);
-				JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
-				jsonArray.add(json);
+		vertx.<String> executeBlocking(future -> {
+			String result = null;
+			try {
+				Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
+				DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
+				todo_dao.delete(delb.prepare());
+				List<ToDoModel> todo_list = todo_dao.queryForAll();
+
+				for (int i = 0; i < todo_list.size(); i++) {
+					ToDoModel todo = todo_list.get(i);
+					JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
+					jsonArray.add(json);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
-		} catch (Exception e) {
-			sendError(400, response);
-		}
+			result = jsonArray.encodePrettily();
+			future.complete(result);
+		} , res -> {
+			if (res.succeeded()) {
+				response.putHeader("content-type", "application/json").end(res.result());
+			} else {
+				sendError(400, response);
+			}
+		});
 	}
 
 	private void sendError(int statusCode, HttpServerResponse response) {

@@ -63,11 +63,13 @@ public class ToDoVerticle extends AbstractVerticle {
 					JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
 					jsonArray.add(json);
 				}
+				ToDoDatabase.connectionSource.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			result = jsonArray.encodePrettily();
+
 			future.complete(result);
 		} , res -> {
 			if (res.succeeded()) {
@@ -99,6 +101,7 @@ public class ToDoVerticle extends AbstractVerticle {
 					JsonObject json = new JsonObject();
 					result = json.encodePrettily();
 				}
+				ToDoDatabase.connectionSource.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -129,6 +132,7 @@ public class ToDoVerticle extends AbstractVerticle {
 			todo_dao.create(todo);
 			json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
 			response.putHeader("content-type", "application/json").end(json.encodePrettily());
+			ToDoDatabase.connectionSource.close();
 		} catch (Exception e) {
 			sendError(400, response);
 		}
@@ -149,6 +153,7 @@ public class ToDoVerticle extends AbstractVerticle {
 			updb.updateColumnValue("completed", json.getValue("completed"));
 			updb.update();
 			todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
+			ToDoDatabase.connectionSource.close();
 			if (todo != null) {
 				json = buidJson(todo, routingContext.request().absoluteURI());
 				response.putHeader("content-type", "application/json").end(json.encodePrettily());
@@ -172,6 +177,7 @@ public class ToDoVerticle extends AbstractVerticle {
 			delb.where().eq("id", entryId);
 			todo_dao.delete(delb.prepare());
 			todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
+			ToDoDatabase.connectionSource.close();
 			if (todo != null) {
 				JsonObject json = buidJson(todo, routingContext.request().absoluteURI());
 				response.putHeader("content-type", "application/json").end(json.encodePrettily());
@@ -202,6 +208,7 @@ public class ToDoVerticle extends AbstractVerticle {
 					JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
 					jsonArray.add(json);
 				}
+				ToDoDatabase.connectionSource.close();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

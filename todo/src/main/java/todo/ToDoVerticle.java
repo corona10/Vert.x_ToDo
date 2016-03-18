@@ -16,12 +16,15 @@ import com.j256.ormlite.support.ConnectionSource;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class ToDoVerticle extends AbstractVerticle {
@@ -33,10 +36,18 @@ public class ToDoVerticle extends AbstractVerticle {
 		// TODO Auto-generated method stub
 
 		ToDoDatabase.init_db(H2_URL);
-
 		Router router = Router.router(vertx);
 		router.route().handler(BodyHandler.create());
-
+		   router.route().handler(CorsHandler.create("*")
+				      .allowedMethod(HttpMethod.GET)
+				      .allowedMethod(HttpMethod.POST)
+				      .allowedMethod(HttpMethod.DELETE)
+				      .allowedMethod(HttpMethod.PATCH)
+				      .allowedHeader("X-PINGARUNER")
+				      .allowedHeader("Content-Type")
+				      .allowedHeader("Access-Control-Allow-Origin")
+				      );
+		   
 		router.get("/").handler(this::handleGetAllToDo);
 		router.post("/").handler(this::handleAddToDo);
 		router.delete("/").handler(this::handleDeleteAllToDo);
@@ -237,5 +248,10 @@ public class ToDoVerticle extends AbstractVerticle {
 		json.put("url", url);
 		return json;
 	}
-
+	
+	private void enableCors(HttpServerRequest req) {
+		req.response().headers().add("Access-Control-Allow-Origin", "*");
+		req.response().headers().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
+		req.response().headers().add("Access-Control-Allow-Headers", "X-Requested-With, Content-Type");
+	}
 }

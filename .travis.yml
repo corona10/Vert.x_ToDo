@@ -3,5 +3,8 @@ language: java
 jdk:
   - oraclejdk8
 
-before_install: mvn install
-install: mvn test
+before_install:
+- cd todo 
+- mvn install
+install: 
+- mvn test

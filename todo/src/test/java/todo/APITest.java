@@ -110,7 +110,7 @@ public class APITest {
 	   * DELETE / -> delete all to-do list test
 	   */
 	  @Test
-	  public void getDeleteTest(TestContext context) {
+	  public void GetAndDeleteTest(TestContext context) {
 			Client client = Client.create();
 			WebResource webResource = client
 			   .resource("http://localhost:3000/");

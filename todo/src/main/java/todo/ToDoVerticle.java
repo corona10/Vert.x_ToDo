@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.runner.Runner;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.j256.ormlite.dao.Dao;
@@ -56,7 +58,18 @@ public class ToDoVerticle extends AbstractVerticle {
 		router.patch("/:entryId").handler(this::handleModifyToDo);
 		router.delete("/:entryId").handler(this::handleDeleteToDo);
 
-		vertx.createHttpServer().requestHandler(router::accept).listen(8000);
+		vertx.createHttpServer().requestHandler(router::accept).listen(
+	            // Retrieve the port from the configuration,
+	            // default to 8080.
+	            config().getInteger("http.port", 8000),
+	            result -> {
+	              if (result.succeeded()) {
+	            	  startFuture.complete();
+	              } else {
+	            	  startFuture.fail(result.cause());
+	              }
+	            }
+	        );;
 	}
 
 	private void handleGetAllToDo(RoutingContext routingContext) {

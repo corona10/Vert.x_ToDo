@@ -10,13 +10,11 @@
 			<artifactId>vertx-core</artifactId>
 			<version>3.0.0</version>
 		</dependency>
-
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-web</artifactId>
 			<version>3.0.0</version>
 		</dependency>
-
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-unit</artifactId>
@@ -28,7 +26,21 @@
 			<artifactId>gson</artifactId>
 			<version>2.6.2</version>
 		</dependency>
-
+		<dependency>
+			<groupId>com.j256.ormlite</groupId>
+			<artifactId>ormlite-jdbc</artifactId>
+			<version>4.48</version>
+		</dependency>
+		<dependency>
+			<groupId>com.j256.ormlite</groupId>
+			<artifactId>ormlite-core</artifactId>
+			<version>4.48</version>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.4.191</version>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -64,11 +76,11 @@
 			<artifactId>vertx-unit</artifactId>
 			<version>3.2.1</version>
 		</dependency>
-			<dependency>
-		<groupId>com.sun.jersey</groupId>
-		<artifactId>jersey-client</artifactId>
-		<version>1.8</version>
-	</dependency>
+		<dependency>
+			<groupId>com.sun.jersey</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>1.8</version>
+		</dependency>
 	</dependencies>
 
 	<build>

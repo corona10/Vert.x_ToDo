@@ -1,4 +1,7 @@
 # todo-backend-vert.x for GSoC 2016
+
+[![Build Status](https://travis-ci.org/corona10/Vert.x_ToDo.svg?branch=master)](https://travis-ci.org/corona10/Vert.x_ToDo)
+
 ## todo-list
 * improve [unittest codes](https://github.com/corona10/Vert.x_ToDo/blob/master/todo/src/test/java/todo/APITest.java)
 * write tutorial documents for beginners in Korean and English

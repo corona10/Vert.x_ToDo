@@ -1,7 +1,7 @@
 # todo-backend-vert.x for GSoC 2016
 ## todo-list
-* write unittest code
-* write tutorial document for beginners with korean and english
+* improve [unittest codes](https://github.com/corona10/Vert.x_ToDo/blob/master/todo/src/test/java/todo/APITest.java)
+* write tutorial documents for beginners in Korean and English
 * improve codes with Vert.x feature and Java8
 
 ## Spec

@@ -1,19 +1,13 @@
 package todo;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import org.junit.runner.Runner;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.stmt.DeleteBuilder;
 import com.j256.ormlite.stmt.UpdateBuilder;
-import com.j256.ormlite.support.ConnectionSource;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;

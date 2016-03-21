@@ -27,43 +27,46 @@ public class ToDoVerticle extends AbstractVerticle {
 
 	final static String H2_URL = "jdbc:h2:mem:todo;DB_CLOSE_DELAY=-1";
 
-	@Override
-	public void start(Future<Void> startFuture) throws Exception {
-		// TODO Auto-generated method stub
+  @Override
+  public void start(Future<Void> startFuture) throws Exception {
+    // TODO Auto-generated method stub
 
-		ToDoDatabase.init_db(H2_URL);
-		Router router = Router.router(vertx);
-		router.route().handler(BodyHandler.create());
-		   router.route().handler(CorsHandler.create("*")
-				      .allowedMethod(HttpMethod.GET)
-				      .allowedMethod(HttpMethod.POST)
-				      .allowedMethod(HttpMethod.DELETE)
-				      .allowedMethod(HttpMethod.PATCH)
-				      .allowedHeader("X-PINGARUNER")
-				      .allowedHeader("Content-Type")
-				      .allowedHeader("Access-Control-Allow-Origin")
-				      );
-		   
-		router.get("/").handler(this::handleGetAllToDo);
-		router.post("/").handler(this::handleAddToDo);
-		router.delete("/").handler(this::handleDeleteAllToDo);
+    vertx.<String> executeBlocking(future -> {
+      String result = null;
+      ToDoDatabase.init_db(H2_URL);
+      future.complete(result);
+    } , res -> {
+      Router router = Router.router(vertx);
+      router.route().handler(BodyHandler.create());
+      router.route()
+          .handler(CorsHandler.create("*")
+          .allowedMethod(HttpMethod.GET)
+          .allowedMethod(HttpMethod.POST)
+          .allowedMethod(HttpMethod.DELETE)
+          .allowedMethod(HttpMethod.PATCH)
+          .allowedHeader("X-PINGARUNER")
+          .allowedHeader("Content-Type")
+          .allowedHeader("Access-Control-Allow-Origin"));
 
-		router.get("/:entryId").handler(this::handleGetToDo);
-		router.patch("/:entryId").handler(this::handleModifyToDo);
-		router.delete("/:entryId").handler(this::handleDeleteToDo);
+      router.get("/").handler(this::handleGetAllToDo);
+      router.post("/").handler(this::handleAddToDo);
+      router.delete("/").handler(this::handleDeleteAllToDo);
 
-		vertx.createHttpServer().requestHandler(router::accept).listen(
-	            // Retrieve the port from the configuration,
-	            // default to 8080.
-	            config().getInteger("http.port", 8000),
-	            result -> {
-	              if (result.succeeded()) {
-	            	  startFuture.complete();
-	              } else {
-	            	  startFuture.fail(result.cause());
-	              }
-	            }
-	        );;
+      router.get("/:entryId").handler(this::handleGetToDo);
+      router.patch("/:entryId").handler(this::handleModifyToDo);
+      router.delete("/:entryId").handler(this::handleDeleteToDo);
+
+      vertx.createHttpServer().requestHandler(router::accept).listen(
+          // Retrieve the port from the configuration,
+          // default to 8080.
+          config().getInteger("http.port", 8000), result -> {
+        if (result.succeeded()) {
+          startFuture.complete();
+        } else {
+          startFuture.fail(result.cause());
+        }
+      });
+    });
 	}
 
 	private void handleGetAllToDo(RoutingContext routingContext) {

@@ -30,7 +30,7 @@ import com.sun.jersey.api.client.WebResource;
 public class APITest {
 	  Vertx vertx;
 	  HttpServer server;
-	  int port = 3000;
+	  int port = 8000;
 
 	  @Before
 	  public void before(TestContext context) {
@@ -55,7 +55,7 @@ public class APITest {
 	  @Test
 	  public void AddAndGetAndDeleteTest(TestContext context) {
 		Client client = Client.create();
-		WebResource webResource = client.resource("http://localhost:3000/");
+		WebResource webResource = client.resource("http://localhost:" + port);
 
 		// POST / -> register to-do test
 		JsonObject input_json = new JsonObject();
@@ -82,8 +82,8 @@ public class APITest {
 		String todo_url = real_output.getValue("url").toString();
 		String sep[] = todo_url.split("/");
 		int request_id = Integer.parseInt(sep[3]);
-		output_json.put("url", "http://localhost:3000/"+request_id);
-		webResource = client.resource("http://localhost:3000/"+request_id);
+		output_json.put("url", "http://localhost:"+port+"/"+request_id);
+		webResource = client.resource("http://localhost:"+port+"/"+request_id);
 		response = webResource.accept("application/json")
                  .get(ClientResponse.class);
 		assertEquals(response.getStatus(), 200);
@@ -96,7 +96,7 @@ public class APITest {
 		assertEquals(real_output.getValue("url"), output_json.getValue("url"));
 		
 		// DELETE /:entryId -> delete entryId's to-do test
-		webResource = client.resource("http://localhost:3000/"+request_id);
+		webResource = client.resource("http://localhost:"+port+"/"+request_id);
 		response = webResource.type("application/json").delete(ClientResponse.class);
 		assertEquals(response.getStatus(), 200);
 		output = response.getEntity(String.class);
@@ -113,7 +113,7 @@ public class APITest {
 	  public void GetAndDeleteTest(TestContext context) {
 			Client client = Client.create();
 			WebResource webResource = client
-			   .resource("http://localhost:3000/");
+			   .resource("http://localhost:"+ port);
 
 			// DELETE / -> delete all to-do list test
 			ClientResponse response = webResource.type("application/json").delete(ClientResponse.class);

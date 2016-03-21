@@ -25,12 +25,18 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 public class ToDoVerticle extends AbstractVerticle {
 
-	final static String H2_URL = "jdbc:h2:mem:todo;DB_CLOSE_DELAY=-1";
-	final static int PORT = 8000;
+  final static String H2_URL = "jdbc:h2:mem:todo;DB_CLOSE_DELAY=-1";
   @Override
   public void start(Future<Void> startFuture) throws Exception {
     // TODO Auto-generated method stub
 
+    Integer port = 8000;
+    String ip = "localhost";
+    String oepnshift = System.getenv("OPENSHIFT_VERTX_IP");
+    if (oepnshift != null) {
+        port = Integer.getInteger("http.port");
+        ip = System.getProperty("http.address");
+    }
     Router router = Router.router(vertx);
     vertx.<String> executeBlocking(future -> {
       String result = null;
@@ -57,8 +63,7 @@ public class ToDoVerticle extends AbstractVerticle {
       router.delete("/:entryId").handler(this::handleDeleteToDo);
     });
 
-    vertx.createHttpServer().requestHandler(router::accept).listen(
-        config().getInteger("http.port", PORT), result -> {
+    vertx.createHttpServer().requestHandler(router::accept).listen(port, ip, result -> {
       if (result.succeeded()) {
         startFuture.complete();
       } else {

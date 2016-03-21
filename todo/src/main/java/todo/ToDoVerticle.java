@@ -31,12 +31,12 @@ public class ToDoVerticle extends AbstractVerticle {
   public void start(Future<Void> startFuture) throws Exception {
     // TODO Auto-generated method stub
 
+    Router router = Router.router(vertx);
     vertx.<String> executeBlocking(future -> {
       String result = null;
       ToDoDatabase.init_db(H2_URL);
       future.complete(result);
-    } , res -> {
-      Router router = Router.router(vertx);
+    } , res -> { 
       router.route().handler(BodyHandler.create());
       router.route()
           .handler(CorsHandler.create("*")
@@ -55,15 +55,15 @@ public class ToDoVerticle extends AbstractVerticle {
       router.get("/:entryId").handler(this::handleGetToDo);
       router.patch("/:entryId").handler(this::handleModifyToDo);
       router.delete("/:entryId").handler(this::handleDeleteToDo);
+    });
 
-      vertx.createHttpServer().requestHandler(router::accept).listen(
-          config().getInteger("http.port", 8000), result -> {
-        if (result.succeeded()) {
-          startFuture.complete();
-        } else {
-          startFuture.fail(result.cause());
-        }
-      });
+    vertx.createHttpServer().requestHandler(router::accept).listen(
+        config().getInteger("http.port", 8000), result -> {
+      if (result.succeeded()) {
+        startFuture.complete();
+      } else {
+        startFuture.fail(result.cause());
+      }
     });
   }
 

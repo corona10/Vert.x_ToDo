@@ -231,20 +231,14 @@ public class ToDoVerticle extends AbstractVerticle {
         DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
         delb.where().eq("id", entryId);
         todo_dao.delete(delb.prepare());
-        ToDoModel todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
         ToDoDatabase.connectionSource.close();
-        if (todo != null) {
-          JsonObject json = buidJson(todo, routingContext.request().absoluteURI());
-          result = json.encodePrettily();
-        } else {
-          JsonObject json = new JsonObject();
-          result = json.encodePrettily();
-        }
+        JsonObject json = new JsonObject();
+        result = json.encodePrettily();
       } catch (Exception e) {
         e.printStackTrace();
-      }
+        }
       future.complete(result);
-    } , res -> {
+      } , res -> {
       if (res.succeeded()) {
         response.putHeader("content-type", "application/json").end(res.result());
       } else {
@@ -263,20 +257,13 @@ public class ToDoVerticle extends AbstractVerticle {
         Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
         DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
         todo_dao.delete(delb.prepare());
-        List<ToDoModel> todo_list = todo_dao.queryForAll();
-
-        for (int i = 0; i < todo_list.size(); i++) {
-          ToDoModel todo = todo_list.get(i);
-          JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
-          jsonArray.add(json);
-        }
         ToDoDatabase.connectionSource.close();
       } catch (Exception e) {
         e.printStackTrace();
       }
       result = jsonArray.encodePrettily();
       future.complete(result);
-    } , res -> {
+      } , res -> {
       if (res.succeeded()) {
         response.putHeader("content-type", "application/json").end(res.result());
       } else {

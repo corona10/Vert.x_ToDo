@@ -26,7 +26,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 public class ToDoVerticle extends AbstractVerticle {
 
 	final static String H2_URL = "jdbc:h2:mem:todo;DB_CLOSE_DELAY=-1";
-
+	final static int PORT = 443;
   @Override
   public void start(Future<Void> startFuture) throws Exception {
     // TODO Auto-generated method stub
@@ -58,7 +58,7 @@ public class ToDoVerticle extends AbstractVerticle {
     });
 
     vertx.createHttpServer().requestHandler(router::accept).listen(
-        config().getInteger("http.port", 8000), result -> {
+        config().getInteger("http.port", PORT), result -> {
       if (result.succeeded()) {
         startFuture.complete();
       } else {

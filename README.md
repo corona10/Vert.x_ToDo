@@ -1,8 +1,8 @@
-# todo-backend-vert.x for GSoC 2016
-  -> This implementation is using H2 SQL DB for demo, 
-     but it can change any other SQL engine. because it is ORM.
-
 [![Build Status](https://travis-ci.org/corona10/Vert.x_ToDo.svg?branch=master)](https://travis-ci.org/corona10/Vert.x_ToDo)
+
+# todo-backend-vert.x for GSoC 2016
+  This implementation is using H2 SQL DB for demo, 
+  but it can be change for any other SQL engine. Because it is using ORM.
 
 ## todo-list
 * improve [unittest codes](https://github.com/corona10/Vert.x_ToDo/blob/master/todo/src/test/java/todo/APITest.java)

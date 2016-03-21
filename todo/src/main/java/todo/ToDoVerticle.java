@@ -57,8 +57,6 @@ public class ToDoVerticle extends AbstractVerticle {
       router.delete("/:entryId").handler(this::handleDeleteToDo);
 
       vertx.createHttpServer().requestHandler(router::accept).listen(
-          // Retrieve the port from the configuration,
-          // default to 8080.
           config().getInteger("http.port", 8000), result -> {
         if (result.succeeded()) {
           startFuture.complete();

@@ -9,7 +9,7 @@
 * write tutorial documents for beginners in Korean and English
 * improve codes with Vert.x feature and Java8
 
-## OpenShift
+## Openshift
 * [Deploy Link](http://tododemo-corona10.rhcloud.com/)
 * [API Test](http://www.todobackend.com/specs/index.html?http://tododemo-corona10.rhcloud.com/)
 * [Client Test](http://www.todobackend.com/client/index.html?http://tododemo-corona10.rhcloud.com/)

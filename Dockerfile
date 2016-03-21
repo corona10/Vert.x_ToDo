@@ -1,18 +1,10 @@
-FROM vertx/vertx3
+FROM java:8-jre
 
-#                                                       (1)
-ENV VERTICLE_NAME todo.ToDoVerticle
-ENV VERTICLE_FILE todo/target/todo-1.0-SNAPSHOT.jar
-
-# Set the location of the verticles
-ENV VERTICLE_HOME /usr/verticles
-
+ENV VERTICLE_FILE todo/target/todo-1.0-SNAPSHOT-fat.jar
+ENV VERTICLE_HOME /app
 EXPOSE 3000
-
-# Copy your verticle to the container                   (2)
-COPY $VERTICLE_FILE $VERTICLE_HOME/
-
-# Launch the verticle
+RUN mkdir /app
+COPY $VERTICLE_FILE $VERTICLE_HOME
 WORKDIR $VERTICLE_HOME
 ENTRYPOINT ["sh", "-c"]
-CMD ["vertx run $VERTICLE_NAME -cp $VERTICLE_HOME/*"]
+CMD ["java -jar todo-1.0-SNAPSHOT-fat.jar"]

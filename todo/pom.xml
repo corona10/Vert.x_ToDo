@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.todo</groupId>
 	<artifactId>todo</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT-fat</version>
 	<dependencies>
 		<dependency>
 			<groupId>io.vertx</groupId>
@@ -96,6 +96,11 @@
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>todo.App</mainClass>
+						</manifest>
+					</archive>
 					<appendAssemblyId>false</appendAssemblyId>
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>

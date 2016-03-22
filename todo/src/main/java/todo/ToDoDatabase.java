@@ -8,16 +8,17 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 
+import io.vertx.ext.jdbc.JDBCClient;
 import todo.ToDoModel;
 
 public class ToDoDatabase {
 
 	public static ConnectionSource connectionSource;
-
 	static void init_db(String db_url) {
 		connectionSource = null;
 		try {
 			connectionSource = new JdbcConnectionSource(db_url);
+	
 			TableUtils.createTableIfNotExists(connectionSource, ToDoModel.class);
 
 		} catch (SQLException e) {

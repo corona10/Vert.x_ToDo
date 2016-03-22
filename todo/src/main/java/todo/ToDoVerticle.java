@@ -2,6 +2,7 @@ package todo;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.j256.ormlite.dao.Dao;
@@ -10,13 +11,19 @@ import com.j256.ormlite.stmt.DeleteBuilder;
 import com.j256.ormlite.stmt.UpdateBuilder;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.jdbc.JDBCClient;
+import io.vertx.ext.sql.SQLConnection;
+import io.vertx.ext.sql.UpdateResult;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -26,6 +33,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 public class ToDoVerticle extends AbstractVerticle {
 
   final static String H2_URL = "jdbc:h2:mem:todo;DB_CLOSE_DELAY=-1";
+  private JDBCClient jdbc;
   @Override
   public void start(Future<Void> startFuture) throws Exception {
     // TODO Auto-generated method stub
@@ -38,29 +46,46 @@ public class ToDoVerticle extends AbstractVerticle {
         ip = System.getProperty("http.address");
     }
     Router router = Router.router(vertx);
-    vertx.<String> executeBlocking(future -> {
-      String result = null;
-      ToDoDatabase.init_db(H2_URL);
-      future.complete(result);
-    } , res -> { 
-      router.route().handler(BodyHandler.create());
-      router.route()
-          .handler(CorsHandler.create("*")
-          .allowedMethod(HttpMethod.GET)
-          .allowedMethod(HttpMethod.POST)
-          .allowedMethod(HttpMethod.DELETE)
-          .allowedMethod(HttpMethod.PATCH)
-          .allowedHeader("X-PINGARUNER")
-          .allowedHeader("Content-Type")
-          .allowedHeader("Access-Control-Allow-Origin"));
+    jdbc = JDBCClient.createShared(vertx, new JsonObject()
+        .put("url", H2_URL)
+        .put("driver_class", "org.hsqldb.jdbcDriver")
+        .put("max_pool_size", 30));
+    
+    jdbc.getConnection(conn ->{
+      if(conn.failed())
+      {
+        return ;
+      }
+      final SQLConnection connection = conn.result();
+      connection.execute(
+          "CREATE TABLE IF NOT EXISTS "
+          + "`todo` (`id` INTEGER AUTO_INCREMENT , `title` VARCHAR(255) , "
+          + "`order` INTEGER , `completed` TINYINT(1) , PRIMARY KEY (`id`) ) ",
+          create -> {
+            if (create.failed()) {
+              System.out.println("Can not create table");
+              connection.close();
+              return;
+            }
+            router.route().handler(BodyHandler.create());
+            router.route()
+                .handler(CorsHandler.create("*")
+                .allowedMethod(HttpMethod.GET)
+                .allowedMethod(HttpMethod.POST)
+                .allowedMethod(HttpMethod.DELETE)
+                .allowedMethod(HttpMethod.PATCH)
+                .allowedHeader("X-PINGARUNER")
+                .allowedHeader("Content-Type")
+                .allowedHeader("Access-Control-Allow-Origin"));
 
-      router.get("/").handler(this::handleGetAllToDo);
-      router.post("/").handler(this::handleAddToDo);
-      router.delete("/").handler(this::handleDeleteAllToDo);
+            router.get("/").handler(this::handleGetAllToDo);
+            router.post("/").handler(this::handleAddToDo);
+            router.delete("/").handler(this::handleDeleteAllToDo);
 
-      router.get("/:entryId").handler(this::handleGetToDo);
-      router.patch("/:entryId").handler(this::handleModifyToDo);
-      router.delete("/:entryId").handler(this::handleDeleteToDo);
+            router.get("/:entryId").handler(this::handleGetToDo);
+            router.patch("/:entryId").handler(this::handleModifyToDo);
+            router.delete("/:entryId").handler(this::handleDeleteToDo);
+          });
     });
 
     vertx.createHttpServer().requestHandler(router::accept).listen(port, ip, result -> {
@@ -75,102 +100,66 @@ public class ToDoVerticle extends AbstractVerticle {
   private void handleGetAllToDo(RoutingContext routingContext) {
     HttpServerResponse response = routingContext.response();
     JsonArray jsonArray = new JsonArray();
-
-    vertx.<String> executeBlocking(future -> {
-      String result = null;
-      try {
-        Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-        List<ToDoModel> todo_list = todo_dao.queryForAll();
-        for (int i = 0; i < todo_list.size(); i++) {
-          ToDoModel todo = todo_list.get(i);
-          JsonObject json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
+    jdbc.getConnection(ar ->{
+      SQLConnection connection = ar.result();
+      connection.query("SELECT * FROM todo", rs ->{
+        List<JsonObject> todo_list = rs.result().getRows();
+        for(int i = 0; i < todo_list.size(); i++)
+        {
+          JsonObject json = todo_list.get(i);
+          String id = json.getString("id");
+          json.remove("id");
+          json.put("url",  routingContext.request().absoluteURI() + id);
           jsonArray.add(json);
         }
-        ToDoDatabase.connectionSource.close();
-      } catch (SQLException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-      result = jsonArray.encodePrettily();
-
-      future.complete(result);
-    } , res -> {
-      if (res.succeeded()) {
-        if (res.result() != null) {
-          response.putHeader("content-type", "application/json").end(res.result());
-        } else {
-          sendError(400, response);
-        }
-      } else {
-        sendError(400, response);
-      }
+        response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        connection.close();
+      });
     });
   }
 
   private void handleGetToDo(RoutingContext routingContext) {
     int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
     HttpServerResponse response = routingContext.response();
-
-    vertx.<String> executeBlocking(future -> {
-      String result = null;
-      try {
-        Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-        ToDoModel todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
-        if (todo != null) {
-          JsonObject json = buidJson(todo, routingContext.request().absoluteURI());
-          result = json.encodePrettily();
-        } else {
-          JsonObject json = new JsonObject();
-          result = json.encodePrettily();
-        }
-        ToDoDatabase.connectionSource.close();
-      } catch (SQLException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-      future.complete(result);
-    } , res -> {
-      if (res.succeeded()) {
-        if (res.result() != null) {
-          response.putHeader("content-type", "application/json").end(res.result());
-        } else {
-          sendError(400, response);
-        }
-      } else {
-        sendError(400, response);
-      }
-    });
+    System.out.println(entryId);
+      jdbc.getConnection(ar -> {
+        SQLConnection connection = ar.result();
+        
+        select(entryId, connection, result -> {
+          JsonObject json = result.result();
+          JsonArray jsonArray = new JsonArray();
+          if(json != null)
+          {
+            String id = json.getString("id");
+            json.remove("id");
+            json.put("url",  routingContext.request().absoluteURI() + id);
+            System.out.println(json);
+          }else{
+            json = new JsonObject();
+            System.out.println(json);
+          }
+          jsonArray.add(json);
+          System.out.println(jsonArray);
+          response.putHeader("content-type", "application/json").end(json.encodePrettily());
+          connection.close();
+        });
+      });
   }
 
   private void handleAddToDo(RoutingContext routingContext) {
     Gson gson = new Gson();
     HttpServerResponse response = routingContext.response();
-    vertx.<String> executeBlocking(future -> {
-      String result = null;
-      try {
-        JsonObject json = new JsonObject(routingContext.getBodyAsString());
-        json.remove("id");
-        ToDoModel todo = gson.fromJson(json.encodePrettily(), ToDoModel.class);
-        Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-        todo_dao.create(todo);
-        json = buidJson(todo, routingContext.request().absoluteURI() + todo.getId());
-        result = json.encodePrettily();
-        ToDoDatabase.connectionSource.close();
-      } catch (SQLException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-      future.complete(result);
-    } , res -> {
-      if (res.succeeded()) {
-        if (res.result() != null) {
-          response.putHeader("content-type", "application/json").end(res.result());
-        } else {
-          sendError(400, response);
-        }
-      } else {
-        sendError(400, response);
-      }
+    jdbc.getConnection(ar -> {
+      JsonObject json = new JsonObject(routingContext.getBodyAsString());
+      ToDoModel todo = gson.fromJson(json.encodePrettily(), ToDoModel.class);
+      SQLConnection connection = ar.result();
+      insert(todo, connection, (r)->{
+        JsonObject respond_json = r.result();
+        String id = respond_json.getString("id");
+        respond_json.remove("id");
+        respond_json.put("url",  routingContext.request().absoluteURI() + id);
+        response.putHeader("content-type", "application/json").end(respond_json.encodePrettily());
+      });
     });
   }
 
@@ -222,53 +211,25 @@ public class ToDoVerticle extends AbstractVerticle {
 
   private void handleDeleteToDo(RoutingContext routingContext) {
     HttpServerResponse response = routingContext.response();
-    vertx.<String> executeBlocking(future -> {
-      int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
-
-      String result = null;
-      try {
-        Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-        DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
-        delb.where().eq("id", entryId);
-        todo_dao.delete(delb.prepare());
-        ToDoDatabase.connectionSource.close();
-        JsonObject json = new JsonObject();
-        result = json.encodePrettily();
-      } catch (Exception e) {
-        e.printStackTrace();
-        }
-      future.complete(result);
-      } , res -> {
-      if (res.succeeded()) {
-        response.putHeader("content-type", "application/json").end(res.result());
-      } else {
-        sendError(400, response);
-      }
+    int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
+    JsonArray jsonArray = new JsonArray();
+    jdbc.getConnection(ar -> {
+      SQLConnection connection = ar.result();
+      connection.queryWithParams("DELETE FROM todo WHERE id = ?",
+          new JsonArray().add(entryId), (rs) ->{
+        response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+      });
     });
   }
 
   private void handleDeleteAllToDo(RoutingContext routingContext) {
     HttpServerResponse response = routingContext.response();
     JsonArray jsonArray = new JsonArray();
-
-    vertx.<String> executeBlocking(future -> {
-      String result = null;
-      try {
-        Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-        DeleteBuilder<ToDoModel, Integer> delb = todo_dao.deleteBuilder();
-        todo_dao.delete(delb.prepare());
-        ToDoDatabase.connectionSource.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      result = jsonArray.encodePrettily();
-      future.complete(result);
-      } , res -> {
-      if (res.succeeded()) {
-        response.putHeader("content-type", "application/json").end(res.result());
-      } else {
-        sendError(400, response);
-      }
+    jdbc.getConnection(ar -> {
+      SQLConnection connection = ar.result();
+      connection.execute("DELETE FROM todo", rs ->{
+        response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+      });
     });
   }
 
@@ -286,4 +247,43 @@ public class ToDoVerticle extends AbstractVerticle {
     json.put("url", url);
     return json;
   }
+  
+  private void select(int id, SQLConnection connection, Handler<AsyncResult<JsonObject>> handler) {
+    String sql = "SELECT * FROM todo WHERE id = ?";
+    connection.queryWithParams(sql,
+        new JsonArray().add(id),
+        (ar) -> {
+          if (ar.failed()) {
+            handler.handle(Future.failedFuture(ar.cause()));
+            connection.close();
+            return;
+          }else{
+            if(ar.result().getNumRows() > 0)
+            {
+              JsonObject obj = ar.result().getRows().get(0);
+              handler.handle(Future.succeededFuture(obj));
+            }else{
+              JsonObject obj = null;
+              handler.handle(Future.succeededFuture(obj));
+            }
+          }
+        });
+  }
+  
+  private void insert(ToDoModel todo, SQLConnection connection, Handler<AsyncResult<JsonObject>> next) {
+    String sql = "INSERT INTO todo (title, order, completed) VALUES ?, ?, ?";
+    connection.updateWithParams(sql,
+        new JsonArray().add(todo.getTitle())
+                       .add(todo.getOrder())
+                       .add(todo.isCompleted()), (ar) -> {
+          if (ar.failed()) {
+            next.handle(Future.failedFuture(ar.cause()));
+            connection.close();
+            return;
+          }
+          UpdateResult result = ar.result();
+          next.handle(Future.succeededFuture(result.toJson()));
+        });
+  } 
 }
+

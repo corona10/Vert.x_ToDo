@@ -269,7 +269,7 @@ public class ToDoVerticle extends AbstractVerticle {
   }
   
   private void insert(ToDoModel todo, SQLConnection connection, Handler<AsyncResult<ToDoModel>> next) {
-    String sql = "INSERT INTO todo ('id', 'title', 'order', 'completed') VALUES ?, ?, ?, ?";
+    String sql = "INSERT INTO 'todo' ('id', 'title', 'order', 'completed') VALUES ?, ?, ?, ?";
     connection.updateWithParams(sql,
         new JsonArray().add(todo.getId())
                        .add(todo.getTitle())

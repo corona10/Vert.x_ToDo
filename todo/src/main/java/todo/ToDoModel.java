@@ -41,5 +41,10 @@ public class ToDoModel {
 	public Boolean isCompleted() {
 		return completed;
 	}
+	
+	public void setId(int n)
+	{
+	  this.id = n;
+	}
 
 }

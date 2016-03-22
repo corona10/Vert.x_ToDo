@@ -154,11 +154,9 @@ public class ToDoVerticle extends AbstractVerticle {
       ToDoModel todo = gson.fromJson(json.encodePrettily(), ToDoModel.class);
       SQLConnection connection = ar.result();
       insert(todo, connection, (r)->{
-        JsonObject respond_json = r.result();
-        String id = respond_json.getString("id");
-        respond_json.remove("id");
-        respond_json.put("url",  routingContext.request().absoluteURI() + id);
-        response.putHeader("content-type", "application/json").end(respond_json.encodePrettily());
+        ToDoModel response_todo = r.result();
+        JsonObject result_json = buidJson(response_todo, routingContext.request().absoluteURI());
+        response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
       });
     });
   }
@@ -270,10 +268,11 @@ public class ToDoVerticle extends AbstractVerticle {
         });
   }
   
-  private void insert(ToDoModel todo, SQLConnection connection, Handler<AsyncResult<JsonObject>> next) {
-    String sql = "INSERT INTO todo (title, order, completed) VALUES ?, ?, ?";
+  private void insert(ToDoModel todo, SQLConnection connection, Handler<AsyncResult<ToDoModel>> next) {
+    String sql = "INSERT INTO todo ('id', 'title', 'order', 'completed') VALUES ?, ?, ?, ?";
     connection.updateWithParams(sql,
-        new JsonArray().add(todo.getTitle())
+        new JsonArray().add(todo.getId())
+                       .add(todo.getTitle())
                        .add(todo.getOrder())
                        .add(todo.isCompleted()), (ar) -> {
           if (ar.failed()) {
@@ -282,7 +281,8 @@ public class ToDoVerticle extends AbstractVerticle {
             return;
           }
           UpdateResult result = ar.result();
-          next.handle(Future.succeededFuture(result.toJson()));
+          todo.setId(result.getKeys().getInteger(0));
+          next.handle(Future.succeededFuture(todo));
         });
   } 
 }

@@ -1,7 +1,9 @@
 package todo;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
@@ -156,46 +158,28 @@ public class ToDoVerticle extends AbstractVerticle {
   private void handleModifyToDo(RoutingContext routingContext) {
     int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
     HttpServerResponse response = routingContext.response();
-    vertx.<String> executeBlocking(future -> {
-      String result = null;
-      try {
-        Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
-        UpdateBuilder<ToDoModel, Integer> updb = todo_dao.updateBuilder();
-        JsonObject json = new JsonObject(routingContext.getBodyAsString());
-        updb.where().eq("id", entryId);
-        if (json.getValue("title") != null) {
-          updb.updateColumnValue("title", json.getValue("title"));
-        }
+    JsonObject json = new JsonObject(routingContext.getBodyAsString());
 
-        if (json.getValue("order") != null) {
-          updb.updateColumnValue("order", json.getValue("order"));
-        }
+    //update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<JsonObjec
+    jdbc.getConnection(ar ->{
+      String update_col = null;
+      if (json.getValue("title") != null) {
+        update_col = "title";
+      }
 
-        if (json.getValue("completed") != null) {
-          updb.updateColumnValue("completed", json.getValue("completed"));
-        }
-        updb.update();
-        ToDoModel todo = todo_dao.queryBuilder().where().eq("id", entryId).queryForFirst();
-        ToDoDatabase.connectionSource.close();
-        JsonObject result_json = null;
-        if (todo != null) {
-          result_json = buidJson(todo, routingContext.request().absoluteURI());
-          result = result_json.encodePrettily();
-        } else {
-          result_json = new JsonObject();
-          result = result_json.encodePrettily();
-        }
-      } catch (SQLException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+      if (json.getValue("order") != null) {
+        update_col = "order";
       }
-      future.complete(result);
-    } , res -> {
-      if (res.succeeded()) {
-        response.putHeader("content-type", "application/json").end(res.result());
-      } else {
-        sendError(400, response);
+
+      if (json.getValue("completed") != null) {
+        update_col = "completed";
       }
+      SQLConnection connection = ar.result();
+      update(entryId, update_col, json, connection, rs -> {
+      JsonObject result_json = rs.result();
+      buildJson2(result_json, routingContext.request().absoluteURI());
+      response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
+      });
     });
   }
 
@@ -257,9 +241,22 @@ public class ToDoVerticle extends AbstractVerticle {
     json.remove("id");
     return json;
   }
-  private void update(int id, SQLConnection connection,Handler<AsyncResult<JsonObject>> handler)
+  private void update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<JsonObject>> handler)
   {
-    //String sql = "UPDATE todo SET t"
+    String sql = "UPDATE `todo` SET   " + "`"+ col +"` = ? WHERE `id` = ? ";
+    System.out.println(sql);
+    System.out.println(json.getValue(col));
+    System.out.println(id);
+    connection.updateWithParams(sql, new JsonArray()
+                                         .add(json.getString(col))
+                                         .add(id), update ->{
+                                      if(update.failed()){
+                                            handler.handle(Future.failedFuture("update faild"));
+                                            return;
+                                       }
+                                      handler.handle(Future.succeededFuture
+                                          (update.result().getKeys().getJsonObject(0)));
+                                       });
   }
   private void select(int id, SQLConnection connection, Handler<AsyncResult<JsonObject>> handler) {
     String sql = "SELECT * FROM todo WHERE id = ?";

@@ -107,9 +107,8 @@ public class ToDoVerticle extends AbstractVerticle {
         for(int i = 0; i < todo_list.size(); i++)
         {
           JsonObject json = todo_list.get(i);
-          String id = json.getString("id");
-          json.remove("id");
-          json.put("url",  routingContext.request().absoluteURI() + id);
+          int id = json.getInteger("ID");
+          buildJson2(json, routingContext.request().absoluteURI() + id);
           jsonArray.add(json);
         }
         response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
@@ -121,25 +120,18 @@ public class ToDoVerticle extends AbstractVerticle {
   private void handleGetToDo(RoutingContext routingContext) {
     int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
     HttpServerResponse response = routingContext.response();
-    System.out.println(entryId);
       jdbc.getConnection(ar -> {
-        SQLConnection connection = ar.result();
-        
+        SQLConnection connection = ar.result(); 
         select(entryId, connection, result -> {
           JsonObject json = result.result();
           JsonArray jsonArray = new JsonArray();
           if(json != null)
           {
-            String id = json.getString("id");
-            json.remove("id");
-            json.put("url",  routingContext.request().absoluteURI() + id);
-            System.out.println(json);
+            buildJson2(json, routingContext.request().absoluteURI());
           }else{
             json = new JsonObject();
-            System.out.println(json);
           }
           jsonArray.add(json);
-          System.out.println(jsonArray);
           response.putHeader("content-type", "application/json").end(json.encodePrettily());
           connection.close();
         });
@@ -155,7 +147,7 @@ public class ToDoVerticle extends AbstractVerticle {
       SQLConnection connection = ar.result();
       insert(todo, connection, (r)->{
         ToDoModel response_todo = r.result();
-        JsonObject result_json = buidJson(response_todo, routingContext.request().absoluteURI());
+        JsonObject result_json = buidJson(response_todo, routingContext.request().absoluteURI() + response_todo.getId());
         response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
       });
     });
@@ -246,6 +238,29 @@ public class ToDoVerticle extends AbstractVerticle {
     return json;
   }
   
+  private JsonObject buildJson2(JsonObject json, String url)
+  {
+    int id = json.getInteger("ID");
+    json.put("title", json.getString("TITLE"));
+    json.put("order", json.getInteger("ORDER"));
+    boolean iscompleted = true;
+    if(json.getInteger("COMPLETED") == 0)
+    {
+      iscompleted = false;
+    }
+    json.put("completed", iscompleted);
+    json.put("url",  url);
+    json.remove("ID");
+    json.remove("TITLE");
+    json.remove("ORDER");
+    json.remove("COMPLETED");
+    json.remove("id");
+    return json;
+  }
+  private void update(int id, SQLConnection connection,Handler<AsyncResult<JsonObject>> handler)
+  {
+    //String sql = "UPDATE todo SET t"
+  }
   private void select(int id, SQLConnection connection, Handler<AsyncResult<JsonObject>> handler) {
     String sql = "SELECT * FROM todo WHERE id = ?";
     connection.queryWithParams(sql,
@@ -269,10 +284,9 @@ public class ToDoVerticle extends AbstractVerticle {
   }
   
   private void insert(ToDoModel todo, SQLConnection connection, Handler<AsyncResult<ToDoModel>> next) {
-    String sql = "INSERT INTO 'todo' ('id', 'title', 'order', 'completed') VALUES ?, ?, ?, ?";
+    String sql = "INSERT INTO `todo` (`title` ,`order` ,`completed` ) VALUES (?,?,?)";
     connection.updateWithParams(sql,
-        new JsonArray().add(todo.getId())
-                       .add(todo.getTitle())
+        new JsonArray().add(todo.getTitle())
                        .add(todo.getOrder())
                        .add(todo.isCompleted()), (ar) -> {
           if (ar.failed()) {

@@ -159,10 +159,11 @@ public class ToDoVerticle extends AbstractVerticle {
     int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
     HttpServerResponse response = routingContext.response();
     JsonObject json = new JsonObject(routingContext.getBodyAsString());
-
+    System.out.println(json);
     //update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<JsonObjec
     jdbc.getConnection(ar ->{
       String update_col = null;
+      System.out.println(json);
       if (json.getValue("title") != null) {
         update_col = "title";
       }
@@ -175,10 +176,21 @@ public class ToDoVerticle extends AbstractVerticle {
         update_col = "completed";
       }
       SQLConnection connection = ar.result();
-      update(entryId, update_col, json, connection, rs -> {
-      JsonObject result_json = rs.result();
-      buildJson2(result_json, routingContext.request().absoluteURI());
-      response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
+      update(entryId, update_col, json, connection, (rs) -> {
+        
+      select(rs.result(), connection, result -> {
+        JsonObject rs_json = result.result();
+        JsonArray jsonArray = new JsonArray();
+        if(json != null)
+        {
+          buildJson2(rs_json, routingContext.request().absoluteURI());
+        }else{
+          rs_json = new JsonObject();
+        }
+        jsonArray.add(json);
+        response.putHeader("content-type", "application/json").end(rs_json.encodePrettily());
+        connection.close();
+      });
       });
     });
   }
@@ -241,22 +253,60 @@ public class ToDoVerticle extends AbstractVerticle {
     json.remove("id");
     return json;
   }
-  private void update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<JsonObject>> handler)
+  
+  private void update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<Integer>> handler)
   {
-    String sql = "UPDATE `todo` SET   " + "`"+ col +"` = ? WHERE `id` = ? ";
+    String sql = "UPDATE `todo` SET `?` = ? WHERE id = ? ";
     System.out.println(sql);
     System.out.println(json.getValue(col));
     System.out.println(id);
-    connection.updateWithParams(sql, new JsonArray()
-                                         .add(json.getString(col))
-                                         .add(id), update ->{
-                                      if(update.failed()){
-                                            handler.handle(Future.failedFuture("update faild"));
-                                            return;
-                                       }
-                                      handler.handle(Future.succeededFuture
-                                          (update.result().getKeys().getJsonObject(0)));
-                                       });
+    //UPDATE `todo` SET `title` = 'bathe the cat' WHERE `id` = 8 
+    if(json.getValue("title") != null)
+    {
+    connection.updateWithParams(sql,new JsonArray()
+                                        .add(col)
+                                        .add(json.getString("title"))
+                                        .add(id),  update ->{
+        if (update.failed()) {
+          System.out.println(sql);
+          System.out.println("failed");
+          handler.handle(Future.failedFuture("update faild"));
+          return;
+        }
+        update.result().getUpdated();
+        handler.handle(Future.succeededFuture(id));
+      });
+    
+    }
+    if(json.getValue("order") != null)
+    {
+    connection.updateWithParams(sql,new JsonArray()
+                                        .add(col)
+                                        .add(json.getInteger(col))
+                                        .add(id), update ->{
+        if (update.failed()) {
+          System.out.println("failed");
+          handler.handle(Future.failedFuture("update failed"));
+          return;
+        }
+        update.result().getUpdated();
+        handler.handle(Future.succeededFuture(id));
+      });
+    }
+    if(json.getValue("completed") != null)
+    {
+    connection.updateWithParams(sql,new JsonArray()
+                                        .add(col)
+                                        .add(json.getBoolean(col))
+                                        .add(id), update ->{
+        if (update.failed()) {
+          handler.handle(Future.failedFuture("update faild"));
+          return;
+        }
+        update.result().getUpdated();
+        handler.handle(Future.succeededFuture(id));
+      });
+    }
   }
   private void select(int id, SQLConnection connection, Handler<AsyncResult<JsonObject>> handler) {
     String sql = "SELECT * FROM todo WHERE id = ?";

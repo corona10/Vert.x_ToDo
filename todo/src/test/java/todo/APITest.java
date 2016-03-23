@@ -100,8 +100,8 @@ public class APITest {
 		response = webResource.type("application/json").delete(ClientResponse.class);
 		assertEquals(response.getStatus(), 200);
 		output = response.getEntity(String.class);
-		real_output= new JsonObject(output);
-		assertTrue(real_output.isEmpty());
+		JsonArray real_output_json = new JsonArray(output);
+		assertTrue(real_output_json.isEmpty());
 
 	  }
 	  /**

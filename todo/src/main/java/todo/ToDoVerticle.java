@@ -159,11 +159,8 @@ public class ToDoVerticle extends AbstractVerticle {
     int entryId = Integer.parseInt(routingContext.request().getParam("entryId"));
     HttpServerResponse response = routingContext.response();
     JsonObject json = new JsonObject(routingContext.getBodyAsString());
-    System.out.println(json);
-    //update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<JsonObjec
     jdbc.getConnection(ar ->{
       String update_col = null;
-      System.out.println(json);
       if (json.getValue("title") != null) {
         update_col = "title";
       }
@@ -201,8 +198,7 @@ public class ToDoVerticle extends AbstractVerticle {
     JsonArray jsonArray = new JsonArray();
     jdbc.getConnection(ar -> {
       SQLConnection connection = ar.result();
-      connection.queryWithParams("DELETE FROM todo WHERE id = ?",
-          new JsonArray().add(entryId), (rs) ->{
+      connection.execute("DELETE FROM `todo` WHERE `id` = " +entryId, (rs) ->{
         response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
       });
     });
@@ -256,9 +252,6 @@ public class ToDoVerticle extends AbstractVerticle {
   
   private void update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<Integer>> handler)
   {
-    //UPDATE `todo` SET `order` = 95 WHERE `id` = 14
-    
-    //UPDATE `todo` SET `title` = 'bathe the cat' WHERE `id` = 8 
     if(json.getValue("title") != null && json.getValue("order") == null && json.getValue("completed") == null)
     {
       String sql = "UPDATE `todo` SET `title` = ? WHERE `id` = ? ";

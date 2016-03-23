@@ -1,18 +1,14 @@
 [![Build Status](https://travis-ci.org/corona10/Vert.x_ToDo.svg?branch=master)](https://travis-ci.org/corona10/Vert.x_ToDo)
 
 # todo-backend-vert.x for GSoC 2016
-  This implementation is using H2 SQL DB for demo, 
-  but it can be change for any other SQL engine. Because it is using ORM.
+  This implementation is using H2 SQL DB with JDBC for demo, 
 
 ## todo-list
 * improve [unittest codes](https://github.com/corona10/Vert.x_ToDo/blob/master/todo/src/test/java/todo/APITest.java)
 * write tutorial documents for beginners in Korean and English
+* refactoring dirty SQL code
+* remove unnecessary code.
 * improve codes with Vert.x feature and Java8
-
-## Openshift
-* [Deploy Link](http://tododemo-corona10.rhcloud.com/)
-* [API Test](http://www.todobackend.com/specs/index.html?http://tododemo-corona10.rhcloud.com/)
-* [Client Test](http://www.todobackend.com/client/index.html?http://tododemo-corona10.rhcloud.com/)
 
 ## [Docker](https://hub.docker.com/r/corona10/vert.x_todo/)
 ```

@@ -151,6 +151,7 @@ public class ToDoVerticle extends AbstractVerticle {
         ToDoModel response_todo = r.result();
         JsonObject result_json = buildJson(response_todo, routingContext.request().absoluteURI() + response_todo.getId());
         response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
+        connection.close();
       });
     });
   }
@@ -195,6 +196,7 @@ public class ToDoVerticle extends AbstractVerticle {
       SQLConnection connection = ar.result();
       connection.execute("DELETE FROM `todo` WHERE `id` = " +entryId, (rs) ->{
         response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        connection.close();
       });
     });
   }
@@ -206,6 +208,7 @@ public class ToDoVerticle extends AbstractVerticle {
       SQLConnection connection = ar.result();
       connection.execute("DELETE FROM todo", rs ->{
         response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        connection.close();
       });
     });
   }
@@ -259,6 +262,7 @@ public class ToDoVerticle extends AbstractVerticle {
         }
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
+        connection.close();
       }); 
     }
     if(json.getValue("title") != null && json.getValue("order") != null && json.getValue("completed") == null)
@@ -274,6 +278,7 @@ public class ToDoVerticle extends AbstractVerticle {
         }
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
+        connection.close();
       }); 
     }
     if(json.getValue("title") != null && json.getValue("order") == null && json.getValue("completed") != null)
@@ -289,6 +294,7 @@ public class ToDoVerticle extends AbstractVerticle {
         }
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
+        connection.close();
       }); 
     }
     
@@ -306,6 +312,7 @@ public class ToDoVerticle extends AbstractVerticle {
         }
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
+        connection.close();
       }); 
     }
     
@@ -321,6 +328,7 @@ public class ToDoVerticle extends AbstractVerticle {
         }
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
+        connection.close();
       });
     }
     if (json.getValue("title") == null && json.getValue("order") == null && json.getValue("completed") != null) {
@@ -332,6 +340,7 @@ public class ToDoVerticle extends AbstractVerticle {
         }
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
+        connection.close();
       });
     }
     if (json.getValue("title") == null && json.getValue("order") != null && json.getValue("completed") != null) {
@@ -346,6 +355,7 @@ public class ToDoVerticle extends AbstractVerticle {
         }
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
+        connection.close();
       });
     }
   }
@@ -368,6 +378,7 @@ public class ToDoVerticle extends AbstractVerticle {
               handler.handle(Future.succeededFuture(obj));
             }
           }
+          connection.close();
         });
   }
   
@@ -385,6 +396,7 @@ public class ToDoVerticle extends AbstractVerticle {
           UpdateResult result = ar.result();
           todo.setId(result.getKeys().getInteger(0));
           next.handle(Future.succeededFuture(todo));
+          connection.close();
         });
   } 
 }

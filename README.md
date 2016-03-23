@@ -4,7 +4,7 @@
   This implementation is using H2 SQL DB with JDBC for demo, 
 
 ## todo-list
-* improve [unittest codes](https://github.com/corona10/Vert.x_ToDo/blob/master/todo/src/test/java/todo/APITest.java)
+* improve [unittest codes](https://github.com/corona10/Vert.x_ToDo/blob/JDBC/todo/src/test/java/todo/APITest.java)
 * write tutorial documents for beginners in Korean and English
 * refactoring dirty SQL code
 * remove unnecessary code.

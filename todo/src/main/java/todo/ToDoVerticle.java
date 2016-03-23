@@ -34,7 +34,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 public class ToDoVerticle extends AbstractVerticle {
 
-  final static String H2_URL = "jdbc:h2:mem:todo;DB_CLOSE_DELAY=-1";
+  final static String H2_URL = "jdbc:h2:mem:todo;database_to_upper=false;DB_CLOSE_DELAY=-1";
   private JDBCClient jdbc;
   @Override
   public void start(Future<Void> startFuture) throws Exception {
@@ -110,7 +110,7 @@ public class ToDoVerticle extends AbstractVerticle {
         {
           JsonObject json = todo_list.get(i);
           int id = json.getInteger("ID");
-          buildJson2(json, routingContext.request().absoluteURI() + id);
+          buildJson(json, routingContext.request().absoluteURI() + id);
           jsonArray.add(json);
         }
         response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
@@ -129,7 +129,7 @@ public class ToDoVerticle extends AbstractVerticle {
           JsonArray jsonArray = new JsonArray();
           if(json != null)
           {
-            buildJson2(json, routingContext.request().absoluteURI());
+            buildJson(json, routingContext.request().absoluteURI());
           }else{
             json = new JsonObject();
           }
@@ -149,7 +149,7 @@ public class ToDoVerticle extends AbstractVerticle {
       SQLConnection connection = ar.result();
       insert(todo, connection, (r)->{
         ToDoModel response_todo = r.result();
-        JsonObject result_json = buidJson(response_todo, routingContext.request().absoluteURI() + response_todo.getId());
+        JsonObject result_json = buildJson(response_todo, routingContext.request().absoluteURI() + response_todo.getId());
         response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
       });
     });
@@ -178,12 +178,7 @@ public class ToDoVerticle extends AbstractVerticle {
       select(rs.result(), connection, result -> {
         JsonObject rs_json = result.result();
         JsonArray jsonArray = new JsonArray();
-        if(json != null)
-        {
-          buildJson2(rs_json, routingContext.request().absoluteURI());
-        }else{
-          rs_json = new JsonObject();
-        }
+        buildJson(rs_json, routingContext.request().absoluteURI());
         jsonArray.add(json);
         response.putHeader("content-type", "application/json").end(rs_json.encodePrettily());
         connection.close();
@@ -219,7 +214,7 @@ public class ToDoVerticle extends AbstractVerticle {
     response.setStatusCode(statusCode).end();
   }
 
-  private JsonObject buidJson(ToDoModel model, String url) {
+  private JsonObject buildJson(ToDoModel model, String url) {
     JsonObject json = new JsonObject();
     json.put("completed", model.isCompleted());
     if (model.getOrder() != 0) {
@@ -230,7 +225,7 @@ public class ToDoVerticle extends AbstractVerticle {
     return json;
   }
   
-  private JsonObject buildJson2(JsonObject json, String url)
+  private JsonObject buildJson(JsonObject json, String url)
   {
     int id = json.getInteger("ID");
     json.put("title", json.getString("TITLE"));

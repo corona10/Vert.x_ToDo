@@ -256,23 +256,22 @@ public class ToDoVerticle extends AbstractVerticle {
   
   private void update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<Integer>> handler)
   {
-    String sql = "UPDATE `todo` SET `?` = ? WHERE id = ? ";
-    System.out.println(sql);
-    System.out.println(json.getValue(col));
-    System.out.println(id);
+    //UPDATE `todo` SET `order` = 95 WHERE `id` = 14
+    
     //UPDATE `todo` SET `title` = 'bathe the cat' WHERE `id` = 8 
     if(json.getValue("title") != null)
     {
-    connection.updateWithParams(sql,new JsonArray()
-                                        .add(col)
+      String sql = "UPDATE `todo` SET `title` = ? WHERE `id` = ? ";
+      connection.updateWithParams(sql,new JsonArray()
                                         .add(json.getString("title"))
                                         .add(id),  update ->{
         if (update.failed()) {
           System.out.println(sql);
-          System.out.println("failed");
+          System.out.println("title failed");
           handler.handle(Future.failedFuture("update faild"));
           return;
         }
+        System.out.println("title successs");
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
       });
@@ -280,29 +279,37 @@ public class ToDoVerticle extends AbstractVerticle {
     }
     if(json.getValue("order") != null)
     {
+      String sql = "UPDATE `todo` SET 'order' = ? WHERE id = ? ";
     connection.updateWithParams(sql,new JsonArray()
-                                        .add(col)
                                         .add(json.getInteger(col))
                                         .add(id), update ->{
         if (update.failed()) {
-          System.out.println("failed");
+          System.out.println("order failed");
           handler.handle(Future.failedFuture("update failed"));
           return;
         }
+        System.out.println("order successs");
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
       });
     }
     if(json.getValue("completed") != null)
     {
+      String sql = "UPDATE `todo` SET 'completed' = ? WHERE id = ? ";
+      int completed = 0;
+      if(json.getBoolean(col) == true)
+      {
+        completed = 1;
+      }
     connection.updateWithParams(sql,new JsonArray()
-                                        .add(col)
-                                        .add(json.getBoolean(col))
+                                        .add(completed)
                                         .add(id), update ->{
         if (update.failed()) {
-          handler.handle(Future.failedFuture("update faild"));
+          System.out.println("completed failed");
+          handler.handle(Future.failedFuture("completed failed"));
           return;
         }
+        System.out.println("completed successs");
         update.result().getUpdated();
         handler.handle(Future.succeededFuture(id));
       });

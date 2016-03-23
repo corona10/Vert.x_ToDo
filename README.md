@@ -10,6 +10,11 @@
 * remove unnecessary code.
 * improve codes with Vert.x feature and Java8
 
+## Openshift
+* [Deploy Link](http://tododemojdbc-corona10.rhcloud.com/)
+* [API Test](http://www.todobackend.com/specs/index.html?http://tododemojdbc-corona10.rhcloud.com/)
+* [Client Test](http://www.todobackend.com/client/index.html?http://tododemojdbc-corona10.rhcloud.com/)
+
 ## [Docker](https://hub.docker.com/r/corona10/vert.x_todo/)
 ```
 # maven build first

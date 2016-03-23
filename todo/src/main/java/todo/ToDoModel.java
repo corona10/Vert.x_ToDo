@@ -1,18 +1,12 @@
 package todo;
 
 import com.google.gson.annotations.SerializedName;
-import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
 
-@DatabaseTable(tableName = "todo")
+
 public class ToDoModel {
-	@DatabaseField(allowGeneratedIdInsert = true, generatedId = true, columnName = "id")
 	private int id;
-	@DatabaseField
 	private String title;
-	@DatabaseField
 	private int order;
-	@DatabaseField
 	private boolean completed;
 
 	public ToDoModel() {

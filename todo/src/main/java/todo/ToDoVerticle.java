@@ -1,16 +1,9 @@
 package todo;
 
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
-import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.dao.DaoManager;
-import com.j256.ormlite.stmt.DeleteBuilder;
-import com.j256.ormlite.stmt.UpdateBuilder;
+
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -34,7 +27,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 public class ToDoVerticle extends AbstractVerticle {
 
-  final static String H2_URL = "jdbc:h2:mem:todo;database_to_upper=false;DB_CLOSE_DELAY=-1";
+  final static String H2_URL = "jdbc:h2:mem:todojdbc;DB_CLOSE_DELAY=-1";
   private JDBCClient jdbc;
   @Override
   public void start(Future<Void> startFuture) throws Exception {
@@ -50,7 +43,7 @@ public class ToDoVerticle extends AbstractVerticle {
     Router router = Router.router(vertx);
     jdbc = JDBCClient.createShared(vertx, new JsonObject()
         .put("url", H2_URL)
-        .put("driver_class", "org.hsqldb.jdbcDriver")
+        .put("driver_class", "org.h2.Driver")
         .put("max_pool_size", 30));
     
     jdbc.getConnection(conn ->{

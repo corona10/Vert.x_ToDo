@@ -277,7 +277,7 @@ public class ToDoVerticle extends AbstractVerticle {
       });
     
     }
-    if(json.getValue("order") != null)
+    if(json.getValue("order") != null && json.getValue("completed") == null && json.getValue("title") == null)
     {
       String sql = "UPDATE `todo` SET 'order' = ? WHERE id = ? ";
     connection.updateWithParams(sql,new JsonArray()
@@ -293,17 +293,9 @@ public class ToDoVerticle extends AbstractVerticle {
         handler.handle(Future.succeededFuture(id));
       });
     }
-    if(json.getValue("completed") != null)
-    {
-      String sql = "UPDATE `todo` SET 'completed' = ? WHERE id = ? ";
-      int completed = 0;
-      if(json.getBoolean(col) == true)
-      {
-        completed = 1;
-      }
-    connection.updateWithParams(sql,new JsonArray()
-                                        .add(completed)
-                                        .add(id), update ->{
+    if (json.getValue("completed") != null) {
+      String sql = "UPDATE `todo` SET `completed` = ? WHERE `id` = ? ";
+      connection.updateWithParams(sql, new JsonArray().add(json.getBoolean(col)).add(id), update -> {
         if (update.failed()) {
           System.out.println("completed failed");
           handler.handle(Future.failedFuture("completed failed"));

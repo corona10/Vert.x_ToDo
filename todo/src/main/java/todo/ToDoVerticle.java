@@ -154,21 +154,8 @@ public class ToDoVerticle extends AbstractVerticle {
     HttpServerResponse response = routingContext.response();
     JsonObject json = new JsonObject(routingContext.getBodyAsString());
     jdbc.getConnection(ar ->{
-      String update_col = null;
-      if (json.getValue("title") != null) {
-        update_col = "title";
-      }
-
-      if (json.getValue("order") != null) {
-        update_col = "order";
-      }
-
-      if (json.getValue("completed") != null) {
-        update_col = "completed";
-      }
       SQLConnection connection = ar.result();
-      update(entryId, update_col, json, connection, (rs) -> {
-        
+      update(entryId, json, connection, (rs) -> {      
       select(rs.result(), connection, result -> {
         JsonObject rs_json = result.result();
         JsonArray jsonArray = new JsonArray();
@@ -241,7 +228,7 @@ public class ToDoVerticle extends AbstractVerticle {
     return json;
   }
   
-  private void update(int id, String col, JsonObject json, SQLConnection connection,Handler<AsyncResult<Integer>> handler)
+  private void update(int id, JsonObject json, SQLConnection connection,Handler<AsyncResult<Integer>> handler)
   {
     if(json.getValue("title") != null && json.getValue("order") == null && json.getValue("completed") == null)
     {
@@ -313,7 +300,7 @@ public class ToDoVerticle extends AbstractVerticle {
     {
       String sql = "UPDATE `todo` SET `order` = ? WHERE `id` = ?";
     connection.updateWithParams(sql,new JsonArray()
-                                        .add(json.getInteger(col))
+                                        .add(json.getInteger("order"))
                                         .add(id), update ->{
         if (update.failed()) {
           handler.handle(Future.failedFuture("update failed"));
@@ -326,7 +313,9 @@ public class ToDoVerticle extends AbstractVerticle {
     }
     if (json.getValue("title") == null && json.getValue("order") == null && json.getValue("completed") != null) {
       String sql = "UPDATE `todo` SET `completed` = ? WHERE `id` = ? ";
-      connection.updateWithParams(sql, new JsonArray().add(json.getBoolean(col)).add(id), update -> {
+      connection.updateWithParams(sql, new JsonArray()
+                                       .add(json.getBoolean("completed"))
+                                       .add(id), update -> {
         if (update.failed()) {
           handler.handle(Future.failedFuture("completed failed"));
           return;
@@ -339,8 +328,8 @@ public class ToDoVerticle extends AbstractVerticle {
     if (json.getValue("title") == null && json.getValue("order") != null && json.getValue("completed") != null) {
       String sql = "UPDATE `todo` SET `completed` = ?, `order` = ? WHERE `id` = ? ";
       connection.updateWithParams(sql, new JsonArray()
-                                           .add(json.getBoolean(col))
-                                           .add(json.getInteger(col))
+                                           .add(json.getBoolean("completed"))
+                                           .add(json.getInteger("order"))
                                            .add(id), update -> {
         if (update.failed()) {
           handler.handle(Future.failedFuture("completed failed"));

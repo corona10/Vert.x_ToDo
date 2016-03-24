@@ -92,15 +92,18 @@ public class ToDoVerticle extends AbstractVerticle {
     jdbc.getConnection(ar ->{
       SQLConnection connection = ar.result();
       connection.query("SELECT * FROM todo", rs ->{
-        List<JsonObject> todo_list = rs.result().getRows();
-        for(int i = 0; i < todo_list.size(); i++)
-        {
-          JsonObject json = todo_list.get(i);
-          int id = json.getInteger("id");
-          buildJson(json, routingContext.request().absoluteURI() + id);
-          jsonArray.add(json);
+        if (rs.succeeded()) {
+          List<JsonObject> todo_list = rs.result().getRows();
+          for (int i = 0; i < todo_list.size(); i++) {
+            JsonObject json = todo_list.get(i);
+            int id = json.getInteger("id");
+            buildJson(json, routingContext.request().absoluteURI() + id);
+            jsonArray.add(json);
+          }
+          response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        } else {
+          sendError(400, response);
         }
-        response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
         connection.close();
       });
     });
@@ -112,16 +115,19 @@ public class ToDoVerticle extends AbstractVerticle {
       jdbc.getConnection(ar -> {
         SQLConnection connection = ar.result(); 
         select(entryId, connection, result -> {
+        if (result.succeeded()) {
           JsonObject json = result.result();
           JsonArray jsonArray = new JsonArray();
-          if(json != null)
-          {
+          if (json != null) {
             buildJson(json, routingContext.request().absoluteURI());
-          }else{
+          } else {
             json = new JsonObject();
           }
           jsonArray.add(json);
           response.putHeader("content-type", "application/json").end(json.encodePrettily());
+        } else {
+          sendError(400, response);
+        }
           connection.close();
         });
       });
@@ -134,9 +140,14 @@ public class ToDoVerticle extends AbstractVerticle {
       ToDoModel todo = new ToDoModel(json);
       SQLConnection connection = ar.result();
       insert(todo, connection, (r)->{
-        ToDoModel response_todo = r.result();
-        JsonObject result_json = buildJson(response_todo, routingContext.request().absoluteURI() + response_todo.getId());
-        response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
+        if (r.succeeded()) {
+          ToDoModel response_todo = r.result();
+          JsonObject result_json = buildJson(response_todo,
+              routingContext.request().absoluteURI() + response_todo.getId());
+          response.putHeader("content-type", "application/json").end(result_json.encodePrettily());
+        } else {
+          sendError(400, response);
+        }
         connection.close();
       });
     });
@@ -150,12 +161,16 @@ public class ToDoVerticle extends AbstractVerticle {
       SQLConnection connection = ar.result();
       update(entryId, json, connection, (rs) -> {      
       select(rs.result(), connection, result -> {
-        JsonObject rs_json = result.result();
-        JsonArray jsonArray = new JsonArray();
-        buildJson(rs_json, routingContext.request().absoluteURI());
-        jsonArray.add(json);
-        response.putHeader("content-type", "application/json").end(rs_json.encodePrettily());
-        connection.close();
+          if (result.succeeded()) {
+            JsonObject rs_json = result.result();
+            JsonArray jsonArray = new JsonArray();
+            buildJson(rs_json, routingContext.request().absoluteURI());
+            jsonArray.add(json);
+            response.putHeader("content-type", "application/json").end(rs_json.encodePrettily());
+          } else {
+            sendError(400, response);
+          }
+          connection.close();
       });
       });
     });
@@ -168,7 +183,11 @@ public class ToDoVerticle extends AbstractVerticle {
     jdbc.getConnection(ar -> {
       SQLConnection connection = ar.result();
       connection.execute("DELETE FROM `todo` WHERE `id` = " +entryId, (rs) ->{
-        response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        if (rs.succeeded()) {
+          response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        } else {
+          sendError(400, response);
+        }
         connection.close();
       });
     });
@@ -180,7 +199,11 @@ public class ToDoVerticle extends AbstractVerticle {
     jdbc.getConnection(ar -> {
       SQLConnection connection = ar.result();
       connection.execute("DELETE FROM todo", rs ->{
-        response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        if (rs.succeeded()) {
+          response.putHeader("content-type", "application/json").end(jsonArray.encodePrettily());
+        } else {
+          sendError(400, response);
+        }
         connection.close();
       });
     });

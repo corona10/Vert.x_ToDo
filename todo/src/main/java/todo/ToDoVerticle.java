@@ -1,19 +1,17 @@
 package todo;
 
 import java.util.List;
+import java.util.logging.Logger;
 
-import com.google.gson.Gson;
+import org.slf4j.LoggerFactory;
 
-
+import java.util.logging.Logger;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.jdbc.JDBCClient;
@@ -23,16 +21,15 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
-import io.vertx.ext.web.handler.StaticHandler;
 
 public class ToDoVerticle extends AbstractVerticle {
 
-  final static String H2_URL = "jdbc:h2:mem:todojdbc;DB_CLOSE_DELAY=-1";
+  final static String H2_URL = "jdbc:h2:mem:todojdbc;;DATABASE_TO_UPPER=FALSE;DB_CLOSE_DELAY=-1";
+  private Logger logger =  Logger.getLogger(ToDoVerticle.class.getName());
   private JDBCClient jdbc;
   @Override
   public void start(Future<Void> startFuture) throws Exception {
     // TODO Auto-generated method stub
-
     Integer port = 8000;
     String ip = "localhost";
     String oepnshift = System.getenv("OPENSHIFT_VERTX_IP");
@@ -54,14 +51,15 @@ public class ToDoVerticle extends AbstractVerticle {
       final SQLConnection connection = conn.result();
       connection.execute(
           "CREATE TABLE IF NOT EXISTS "
-          + "`todo` (`id` INTEGER AUTO_INCREMENT , `title` VARCHAR(255) , "
-          + "`order` INTEGER , `completed` TINYINT(1) , PRIMARY KEY (`id`) ) ",
+          + " todo (id INTEGER AUTO_INCREMENT , title VARCHAR(255) , "
+          + "\"order\" INTEGER , completed TINYINT(1) , PRIMARY KEY (id) ) ",
           create -> {
             if (create.failed()) {
-              System.out.println("Can not create table");
+              logger.warning("Can not create table");
               connection.close();
               return;
             }
+            logger.info("Table create success");
             router.route().handler(BodyHandler.create());
             router.route()
                 .handler(CorsHandler.create("*")
@@ -102,7 +100,7 @@ public class ToDoVerticle extends AbstractVerticle {
         for(int i = 0; i < todo_list.size(); i++)
         {
           JsonObject json = todo_list.get(i);
-          int id = json.getInteger("ID");
+          int id = json.getInteger("id");
           buildJson(json, routingContext.request().absoluteURI() + id);
           jsonArray.add(json);
         }
@@ -134,11 +132,10 @@ public class ToDoVerticle extends AbstractVerticle {
   }
 
   private void handleAddToDo(RoutingContext routingContext) {
-    Gson gson = new Gson();
     HttpServerResponse response = routingContext.response();
     jdbc.getConnection(ar -> {
       JsonObject json = new JsonObject(routingContext.getBodyAsString());
-      ToDoModel todo = gson.fromJson(json.encodePrettily(), ToDoModel.class);
+      ToDoModel todo = new ToDoModel(json);
       SQLConnection connection = ar.result();
       insert(todo, connection, (r)->{
         ToDoModel response_todo = r.result();
@@ -210,21 +207,15 @@ public class ToDoVerticle extends AbstractVerticle {
   
   private JsonObject buildJson(JsonObject json, String url)
   {
-    int id = json.getInteger("ID");
-    json.put("title", json.getString("TITLE"));
-    json.put("order", json.getInteger("ORDER"));
+    int id = json.getInteger("id");
     boolean iscompleted = true;
-    if(json.getInteger("COMPLETED") == 0)
+    if(json.getInteger("completed") == 0)
     {
       iscompleted = false;
     }
-    json.put("completed", iscompleted);
-    json.put("url",  url);
-    json.remove("ID");
-    json.remove("TITLE");
-    json.remove("ORDER");
-    json.remove("COMPLETED");
+    json.put("completed", iscompleted);;
     json.remove("id");
+    json.put("url", url);
     return json;
   }
   

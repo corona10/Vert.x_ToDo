@@ -2,10 +2,6 @@ package todo;
 
 import java.util.List;
 import java.util.logging.Logger;
-
-import org.slf4j.LoggerFactory;
-
-import java.util.logging.Logger;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;

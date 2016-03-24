@@ -2,18 +2,13 @@ package todo;
 
 import java.sql.SQLException;
 import java.util.List;
-
-import com.google.gson.Gson;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.stmt.DeleteBuilder;
 import com.j256.ormlite.stmt.UpdateBuilder;
-
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -21,7 +16,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
-import io.vertx.ext.web.handler.StaticHandler;
 
 public class ToDoVerticle extends AbstractVerticle {
 
@@ -143,14 +137,13 @@ public class ToDoVerticle extends AbstractVerticle {
   }
 
   private void handleAddToDo(RoutingContext routingContext) {
-    Gson gson = new Gson();
     HttpServerResponse response = routingContext.response();
     vertx.<String> executeBlocking(future -> {
       String result = null;
       try {
         JsonObject json = new JsonObject(routingContext.getBodyAsString());
         json.remove("id");
-        ToDoModel todo = gson.fromJson(json.encodePrettily(), ToDoModel.class);
+        ToDoModel todo = new ToDoModel(json);
         Dao<ToDoModel, Integer> todo_dao = DaoManager.createDao(ToDoDatabase.connectionSource, ToDoModel.class);
         todo_dao.create(todo);
         json = buildJson(todo, routingContext.request().absoluteURI() + todo.getId());

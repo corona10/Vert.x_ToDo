@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/corona10/Vert.x_ToDo.svg?branch=master)](https://travis-ci.org/corona10/Vert.x_ToDo)
 
-# todo-backend-vert.x for GSoC 2016
+# todo-backend-vert.x
   This implementation is using H2 SQL DB with JDBC for demo, 
 
 ## todo-list
